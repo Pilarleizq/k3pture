@@ -1,5 +1,13 @@
+@font-face {
+  font-family: "Bethany Elingston";
+  src: url("/fonts/bethany-elingston.otf") format("opentype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 :root {
-  font-family: system-ui, sans-serif;
+  font-family: "Bethany Elingston", sans-serif;;
   color: #302638;
   background: #fcf9ff;
   font-synthesis: none;
@@ -111,4 +119,11 @@ p {
   .app li strong {
     flex-basis: 100%;
   }
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
 }

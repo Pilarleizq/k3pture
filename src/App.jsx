@@ -413,10 +413,16 @@ function App() {
 
   return (
     <main className="app">
-      <header>
-        <h1>Bienvenida a k3pture 🎬</h1>
-        <p>Tu espacio para guardar todas tus historias.</p>
-      </header>
+      <header className="cabecera">
+  <h1 className="titulo-logo">
+    <img
+      src="/logo.svg"
+      alt="k3pture"
+      className="logo-principal"
+    />
+  </h1>
+  <p>Historias que se quedan contigo</p>
+</header>
 
       {errorGuardado && <p role="alert">{errorGuardado}</p>}
 

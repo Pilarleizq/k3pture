@@ -408,3 +408,23 @@
     grid-column: 1 / -1;
   }
 }
+
+.cabecera {
+  text-align: center;
+}
+
+.titulo-logo {
+  margin: 0;
+  line-height: 1;
+}
+
+.logo-principal {
+  display: block;
+  width: min(100%, 560px);
+  height: auto;
+  margin: 0 auto;
+}
+
+.cabecera > p {
+  margin: 12px 0 0;
+}
