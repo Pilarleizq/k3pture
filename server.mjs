@@ -3,11 +3,22 @@
 import { createServer } from 'node:http'
 import { loadEnv } from 'vite'
 
-const variables = loadEnv('development', process.cwd(), 'TMDB_')
+const variables = loadEnv(
+  'development',
+  process.cwd(),
+  ['TMDB_', 'GOOGLE_BOOKS_']
+)
+
 const token = variables.TMDB_TOKEN?.trim()
+const claveLibros = variables.GOOGLE_BOOKS_API_KEY?.trim()
 
 if (!token) {
   console.error('Falta TMDB_TOKEN en el archivo .env.')
+  process.exit(1)
+}
+
+if (!claveLibros) {
+  console.warn('Falta GOOGLE_BOOKS_API_KEY en el archivo .env.')
   process.exit(1)
 }
 
@@ -45,12 +56,12 @@ const servidor = createServer(async (peticion, respuesta) => {
     const tipo = url.searchParams.get('type')
     const busqueda = url.searchParams.get('query')?.trim()
 
-    if (tipo !== 'movie' && tipo !== 'tv') {
-      responder(respuesta, 400, {
-        error: 'Selecciona películas o series.',
-      })
-      return
-    }
+   if (!['movie', 'tv', 'book'].includes(tipo)) {
+  responder(respuesta, 400, {
+    error: 'Selecciona películas, series o libros.',
+  })
+  return
+}
 
     if (!busqueda || busqueda.length > 200) {
       responder(respuesta, 400, {
@@ -58,6 +69,57 @@ const servidor = createServer(async (peticion, respuesta) => {
       })
       return
     }
+
+    if (tipo === 'book') {
+  if (!claveLibros) {
+    responder(respuesta, 503, {
+      error: 'La búsqueda de libros todavía no está configurada.',
+    })
+    return
+  }
+
+  const urlLibros = new URL(
+    'https://www.googleapis.com/books/v1/volumes'
+  )
+
+  urlLibros.searchParams.set('q', busqueda)
+  urlLibros.searchParams.set('key', claveLibros)
+  urlLibros.searchParams.set('maxResults', '20')
+  urlLibros.searchParams.set('printType', 'books')
+
+  const resultado = await fetch(urlLibros, {
+    headers: {
+      Accept: 'application/json',
+    },
+    signal: AbortSignal.timeout(10000),
+  })
+
+  if (!resultado.ok) {
+    let mensaje = 'Google Books no ha podido completar la búsqueda.'
+
+    if (resultado.status === 400 || resultado.status === 403) {
+      mensaje =
+        'Revisa la clave de Google Books y que Books API esté habilitada.'
+    } else if (resultado.status === 429) {
+      mensaje =
+        'Se ha alcanzado el límite de consultas. Prueba más tarde.'
+    }
+
+    responder(
+      respuesta,
+      resultado.status === 429 ? 429 : 502,
+      { error: mensaje }
+    )
+    return
+  }
+
+  const datos = await resultado.json()
+
+  responder(respuesta, 200, {
+    results: datos.items ?? [],
+  })
+  return
+}
 
     const urlTMDB = new URL(
       `https://api.themoviedb.org/3/search/${tipo}`
@@ -103,7 +165,7 @@ const servidor = createServer(async (peticion, respuesta) => {
   } catch {
     responder(respuesta, 502, {
       error:
-        'No se ha podido conectar con TMDB. Prueba de nuevo en unos segundos.',
+        'No se ha podido conectar con el catálogo. Prueba de nuevo en unos segundos.',
     })
   }
 })
